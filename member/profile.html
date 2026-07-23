@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Profile • MineHub</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0b0e14;
+      --card: #131a24;
+      --card2: #1a2533;
+      --border: #2a3a4a;
+      --gold: #f7cb6b;
+      --text: #e8edf5;
+      --muted: #8899aa;
+      --primary: #3dc46d;
+      --danger: #ff4757;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 1.5rem 1rem 80px;
+    }
+    .header { text-align: center; margin-bottom: 2rem; }
+    .header h1 { font-size: 1.8rem; }
+    .header h1 i { color: var(--gold); }
+    .card {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+    }
+    .card h2 i { color: var(--gold); margin-right: 8px; }
+    .avatar-section {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .avatar-section .avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--gold);
+      background: var(--card2);
+    }
+    .avatar-section .upload-btn {
+      display: block;
+      margin: 0.5rem auto;
+      padding: 0.5rem 1.5rem;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .avatar-section input[type="file"] { display: none; }
+    input {
+      width: 100%;
+      padding: 0.9rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card2);
+      color: var(--text);
+      font-size: 1rem;
+      margin: 0.4rem 0;
+    }
+    .btn {
+      width: 100%;
+      padding: 0.9rem;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-top: 0.5rem;
+    }
+    .btn-primary { background: linear-gradient(135deg, #00a478, #3dc46d); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn:active { transform: scale(0.97); }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0 env(safe-area-inset-bottom);
+      z-index: 100;
+    }
+    .bottom-nav a {
+      color: var(--muted);
+      text-align: center;
+      text-decoration: none;
+      font-size: 0.7rem;
+      padding: 4px 12px;
+      border-radius: 8px;
+    }
+    .bottom-nav a.active { color: var(--gold); }
+    .bottom-nav a i { font-size: 1.4rem; display: block; margin-bottom: 2px; }
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 0.8rem 1.5rem;
+      border-radius: 12px;
+      z-index: 300;
+      display: none;
+      max-width: 90%;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    .toast.show { display: block; }
+    .toast.success { border-color: var(--primary); }
+    .toast.error { border-color: var(--danger); }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .info-row .label { color: var(--muted); }
+    .info-row .value { font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1><i class="fas fa-user"></i> My Profile</h1>
+  </div>
+
+  <!-- AVATAR -->
+  <div class="card">
+    <div class="avatar-section">
+      <img class="avatar" id="avatarPreview" src="/images/default-avatar.png" alt="Avatar">
+      <button class="upload-btn" id="avatarUploadBtn"><i class="fas fa-camera"></i> Change Avatar</button>
+      <input type="file" id="avatarInput" accept="image/*">
+    </div>
+
+    <div class="info-row">
+      <span class="label">Galaxy ID</span>
+      <span class="value" id="profileGalaxyId">---</span>
+    </div>
+    <div class="info-row">
+      <span class="label">Email</span>
+      <span class="value" id="profileEmail">---</span>
+    </div>
+    <div class="info-row">
+      <span class="label">Balance</span>
+      <span class="value" id="profileBalance" style="color:var(--gold);">GHS 0.00</span>
+    </div>
+  </div>
+
+  <!-- UPDATE PROFILE -->
+  <div class="card">
+    <h2><i class="fas fa-edit"></i> Edit Profile</h2>
+    <input type="text" id="profileName" placeholder="Full Name" />
+    <input type="tel" id="profilePhone" placeholder="Phone Number" />
+    <input type="password" id="profilePassword" placeholder="New Password (leave blank to keep)" />
+    <button class="btn btn-primary" id="updateProfileBtn">Update Profile</button>
+  </div>
+
+  <!-- DANGER ZONE -->
+  <div class="card" style="border-color: var(--danger);">
+    <h2 style="color:var(--danger);"><i class="fas fa-exclamation-triangle"></i> Danger Zone</h2>
+    <button class="btn btn-danger" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <a href="index.html"><i class="fas fa-home"></i> Home</a>
+    <a href="deposit.html"><i class="fas fa-wallet"></i> Deposit</a>
+    <a href="withdraw.html"><i class="fas fa-hand-holding-usd"></i> Withdraw</a>
+    <a href="profile.html" class="active"><i class="fas fa-user"></i> Mine</a>
+  </nav>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ============================================================
+    //  MALVRYX AI • PROFILE PAGE WITH AVATAR UPLOAD
+    // ============================================================
+
+    const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+    const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser = null;
+    let profile = null;
+
+    async function checkSession() {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) {
+        window.location.href = '/login.html';
+        return;
+      }
+      currentUser = session.user;
+      await loadProfile();
+      renderProfile();
+    }
+
+    async function loadProfile() {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+      if (!error) profile = data;
+    }
+
+    function renderProfile() {
+      if (!profile) return;
+      document.getElementById('profileGalaxyId').textContent = profile.galaxy_id || '---';
+      document.getElementById('profileEmail').textContent = currentUser.email || '---';
+      document.getElementById('profileBalance').textContent = 'GHS ' + (profile.balance || 0).toFixed(2);
+      document.getElementById('profileName').value = profile.full_name || '';
+      document.getElementById('profilePhone').value = profile.phone || '';
+
+      // Avatar
+      if (profile.avatar_url) {
+        document.getElementById('avatarPreview').src = profile.avatar_url;
+      }
+    }
+
+    // ===== AVATAR UPLOAD =====
+    document.getElementById('avatarUploadBtn').addEventListener('click', () => {
+      document.getElementById('avatarInput').click();
+    });
+
+    document.getElementById('avatarInput').addEventListener('change', async function() {
+      const file = this.files[0];
+      if (!file) return;
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatars/${currentUser.id}/avatar.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) {
+        showToast('Avatar upload failed: ' + uploadError.message, 'error');
+        return;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: urlData.publicUrl })
+        .eq('id', currentUser.id);
+
+      if (updateError) {
+        showToast('Failed to update avatar: ' + updateError.message, 'error');
+        return;
+      }
+
+      document.getElementById('avatarPreview').src = urlData.publicUrl;
+      showToast('✅ Avatar updated successfully!', 'success');
+    });
+
+    // ===== UPDATE PROFILE =====
+    document.getElementById('updateProfileBtn').addEventListener('click', async function() {
+      const btn = this;
+      const name = document.getElementById('profileName').value.trim();
+      const phone = document.getElementById('profilePhone').value.trim();
+      const password = document.getElementById('profilePassword').value.trim();
+
+      const updates = {};
+      if (name) updates.full_name = name;
+      if (phone) updates.phone = phone;
+
+      if (Object.keys(updates).length > 0) {
+        const { error } = await supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', currentUser.id);
+
+        if (error) {
+          showToast('Update failed: ' + error.message, 'error');
+          return;
+        }
+      }
+
+      if (password.length > 0) {
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) {
+          showToast('Password update failed: ' + error.message, 'error');
+          return;
+        }
+      }
+
+      showToast('✅ Profile updated successfully!', 'success');
+      await loadProfile();
+      renderProfile();
+      document.getElementById('profilePassword').value = '';
+    });
+
+    // ===== LOGOUT =====
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.href = '/login.html';
+    });
+
+    // ===== TOAST =====
+    function showToast(msg, type = 'info') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'toast show ' + type;
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => el.classList.remove('show'), 4000);
+    }
+
+    // ===== INIT =====
+    checkSession();
+  </script>
+</body>
+</html>
